@@ -115,14 +115,128 @@ istream& operator>>(istream& is, CatCard& c) {
 /*---------------------------------------------------------------------------------------*/
 
 class ShelterSpot {
+private:
+    CatCard* card;
+    float cleanliness;
+    int* logHistory;
+    const int slotID;
 
+public:
+    //Constructor
+    ShelterSpot(int id);
+    ShelterSpot(const ShelterSpot& other);
+    //Destructor
+    ~ShelterSpot();
+
+    //Getters
+    CatCard* getCard() const;
+    float getCleanliness() const;
+
+    //Functions
+    bool isEmpty() const;
+    void occupy(const CatCard& c);
+    void evict();
+    void deteriorate();
+    void clean();
+
+    //Operators overload
+    ShelterSpot& operator=(const ShelterSpot& other);
+    friend std::ostream& operator<<(std::ostream& os, const ShelterSpot& s);
 };
+
+ShelterSpot::ShelterSpot(int id) : card(nullptr), slotID(id) {
+    logHistory = new int[3]{0, 0, 0};
+}
+ShelterSpot::ShelterSpot(const ShelterSpot &other) : slotID(other.slotID) {
+    card = other.card ? new CatCard(*other.card) : nullptr;
+    logHistory = new int[3];
+    for (int i = 0; i < 3; i++)
+        logHistory[i] = other.logHistory[i];
+}
+ShelterSpot::~ShelterSpot() {
+    delete card;
+    delete[] logHistory;
+}
+
+CatCard* ShelterSpot::getCard() const {
+    return card;
+}
+float ShelterSpot::getCleanliness() const {
+    return cleanliness;
+}
+
+bool ShelterSpot::isEmpty() const {
+    return card == nullptr;
+}
+void ShelterSpot::occupy(const CatCard& c) {
+    delete card;
+    card = new CatCard(c);
+    logHistory[0]++;
+}
+void ShelterSpot::evict() {
+    delete card;
+    card = nullptr;
+}
+void ShelterSpot::deteriorate() {
+    if (card) {
+        cleanliness -= 15.0f;
+        if (cleanliness < 0) cleanliness = 0;
+    }
+}
+void ShelterSpot::clean() {
+    cleanliness = 100.0f;
+    logHistory[2]++;
+}
+
+ShelterSpot& ShelterSpot:: operator=(const ShelterSpot& other) {
+        if(this != &other) {
+            delete card;
+            card = other.card ? new CatCard(*other.card) : nullptr;
+            cleanliness = other.cleanliness;
+            for(int i=0; i<3; ++i) logHistory[i] = other.logHistory[i];
+        }
+        return *this;
+    }
+std::ostream& operator<<(std::ostream& os, const ShelterSpot& s) {
+    os << "Slot " << s.slotID << ": ";
+    if (s.card) os << *s.card; else os << "Empty";
+    os << " | Clean: " << s.cleanliness << "% (History: " << s.logHistory[2] << " cleans)";
+    return os;
+}
 
 /*---------------------------------------------------------------------------------------*/
 
 class Economy {
     //handling the point system
+private:
+    double balance;
+    double multiplier;
+    //only two variables for now
+
+public:
+    //Constructor
+    Economy(double b, double m);
+    //need copy constructor and destructor
+
+    //Getter
+    double getBalance() const;
+
+    //Function
+    void addFunds(double amount);
+
+    //Operator overload
+    friend std::ostream& operator<<(std::ostream& os, const Economy& e);
 };
+
+Economy::Economy(double b, double m) : balance(b), multiplier(m) {}
+
+double Economy::getBalance() const { return balance; }
+void Economy::addFunds(double amount) { balance += (amount * multiplier); }
+
+std::ostream& operator<<(std::ostream& os, const Economy& e) {
+    os << "Purr-Points: " << e.balance;
+    return os;
+}
 
 /*---------------------------------------------------------------------------------------*/
 
@@ -132,14 +246,7 @@ class GameEngine {
 
 
 int main() {
-    CatCard testCat(1, false, 'F', "Tabby");
-    testCat.setTier(2);
-    cout << "Testing Getter: " << testCat.getBreed() << " Tier: " << testCat.getTier() << "\n";
-    cout<<testCat<<endl;
 
-    CatCard testCat2;
-    cin>>testCat2;
-    cout << testCat2 << "\n";
 
     return 0;
 }
