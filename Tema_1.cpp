@@ -1,5 +1,7 @@
 #include <iostream>
+#include <cstdlib>
 #include <cstring>
+#include <cstdio>
 using namespace std;
 
 class CatCard {
@@ -206,16 +208,14 @@ ostream& operator<<(ostream& os, const ShelterSpot& s) {
 
 /*---------------------------------------------------------------------------------------*/
 
-class Economy {
-    //handling the point system
+class Score {
 private:
     double balance;
     double multiplier;
-    //only two variables for now
 
 public:
     //Constructor
-    Economy(double b, double m);
+    Score(double b, double m);
     //need copy constructor and destructor
 
     //Getter
@@ -225,35 +225,31 @@ public:
     void addFunds(double amount);
 
     //Operator overload
-    friend ostream& operator<<(ostream& os, const Economy& e);
+    friend ostream& operator<<(ostream& os, const Score& e);
 };
 
-Economy::Economy(double b, double m) : balance(b), multiplier(m) {}
+Score::Score(double b, double m) : balance(b), multiplier(m) {}
 
-double Economy::getBalance() const {
+double Score::getBalance() const {
     return balance;
 }
-void Economy::addFunds(double amount) {
+void Score::addFunds(double amount) {
     balance += (amount * multiplier);
 }
 
-ostream& operator<<(ostream& os, const Economy& e) {
-    os << "Purr-Points: " << e.balance;
+ostream& operator<<(ostream& os, const Score& e) {
+    os << " * Purr-Points: " << e.balance<<" * "<<endl;
     return os;
 }
 
 /*---------------------------------------------------------------------------------------*/
 
 class GameEngine {
-    //running the game
 private:
     ShelterSpot* spots[6];
-    Economy stats;
-    bool isRunning;
+    Score stats;
     int difficulty;
 
-    bool canMergeAny() const;
-    bool isShelterFull() const;
 public:
     //Constructors
     GameEngine();
@@ -262,12 +258,17 @@ public:
     //Destructor
     ~GameEngine();
 
-    //Functions
-    void spawnCat();
-    void attemptMerge(int a, int b);
-    void cleanSlot(int id);
+    //Getters
+    const ShelterSpot& getSpot(int index) const { return *spots[index]; }
+    const Score& getScore() const { return stats; }
 
-    void play();
+    //Functions
+    bool canMergeAny() const;
+    bool isShelterFull() const;
+    int spawnCat();
+    int attemptMerge(int a, int b);
+    int cleanSlot(int id);
+
 
     //Operator overload
     GameEngine& operator=(const GameEngine& o);
@@ -275,13 +276,13 @@ public:
     friend istream& operator>>(istream& is, GameEngine& ge);
 };
 
-GameEngine::GameEngine() : stats(10.0, 1.0), isRunning(true), difficulty(0) {
+GameEngine::GameEngine() : stats(10.0, 1.0), difficulty(0) {
     for (int i = 0; i < 6; ++i) spots[i] = new ShelterSpot(i);
 }
-GameEngine::GameEngine(int diff) : stats(0.0, 1.5), isRunning(true), difficulty(diff) {
+GameEngine::GameEngine(int diff) : stats(0.0, 1.5), difficulty(diff) {
     for(int i=0; i<6; ++i) spots[i] = new ShelterSpot(i);
 }
-GameEngine::GameEngine(const GameEngine& o) : stats(o.stats), isRunning(o.isRunning), difficulty(o.difficulty) {
+GameEngine::GameEngine(const GameEngine& o) : stats(o.stats), difficulty(o.difficulty) {
     for(int i=0; i<6; ++i) spots[i] = new ShelterSpot(*o.spots[i]);
 }
 GameEngine::~GameEngine() {
@@ -306,18 +307,21 @@ bool GameEngine::isShelterFull() const {
     return true;
 }
 
-void GameEngine::spawnCat() {
+int GameEngine::spawnCat() {
     for (int i = 0; i < 6; ++i) {
-        if (spots[i]->isEmpty() && spots[i]->getCleanliness() > 20.0f) {
-            spots[i]->occupy(CatCard(1, false, 'F'));
-            for(int j=0; j<6; j++)
-                spots[j]->deteriorate();
-            return;
+        if (spots[i]->isEmpty()) {
+            if (spots[i]->getCleanliness() > 20.0f) {
+                spots[i]->occupy(CatCard(1, false, 'F'));
+                for(int j=0; j<6; j++)
+                    spots[j]->deteriorate();
+                return 0;
+            }
+            return 1;
         }
     }
-    std::cout << "Cannot rescue! Shelter full or too dirty.\n";
+    return 2;
 }
-void GameEngine::attemptMerge(int a, int b) {
+int GameEngine::attemptMerge(int a, int b) {
     if (a >= 0 && a < 6 && b >= 0 && b < 6 && a != b && !spots[a]->isEmpty() && !spots[b]->isEmpty()) {
         if (spots[a]->getCard()->getTier() == spots[b]->getCard()->getTier()) {
             int nextTier = spots[a]->getCard()->getTier() + 1;
@@ -325,70 +329,25 @@ void GameEngine::attemptMerge(int a, int b) {
             spots[b]->evict();
             stats.addFunds(10.0);
             for(int j=0; j<6; j++) spots[j]->deteriorate();
+            return 1;
         }
     }
-    else
-        std::cout << "Merge invalid!\n";
+    return 0;
 }
-void GameEngine::cleanSlot(int id) {
+int GameEngine::cleanSlot(int id) {
     if (stats.getBalance() >= 5.0) {
         stats.addFunds(-5.0);
         spots[id]->clean();
-    } else {
-        std::cout << "Not enough points!\n";
+        return 1;
     }
+        return 0;
 }
 
-void GameEngine::play() {
-    while (isRunning)
-    {
-        // std::cout << "================================" << std::endl;
-        // std::cout << "      CAT SHELTER MANAGER       " << std::endl;
-        // std::cout << "================================" << std::endl;
-        // std::cout << stats << std::endl;
-        //idea: clear the screen for each new load
-
-        std::cout << "\n" << stats << "\n";
-        for (int i = 0; i < 6; ++i)
-            std::cout << *spots[i] << "\n";
-        if (isShelterFull() && !canMergeAny()) {
-            std::cout << "\n!!! GAME OVER !!! No more moves possible.\n";
-            isRunning = false;
-        }
-        std::cout << "1:Rescue | 2:Merge | 3:Clean (5pts) | 4:Exit\nChoice: ";
-        int choice; std::cin >> choice;
-
-        switch (choice) {
-            case 1: spawnCat();
-                break;
-            case 2:
-            { int a, b;
-                std::cout << "Enter IDs to merge: ";
-                std::cin >> a >> b;
-                attemptMerge(a, b);
-            }
-                break;
-            case 3:
-            { int id;
-                std::cout << "Enter the ID to clean: ";
-                std::cin >> id;
-                cleanSlot(id);
-            }
-                break;
-            default: isRunning = false;
-        }
-        for (int i=0; i<100; i++) {
-            cout<<endl;
-        }
-    }
-
-}
-
-GameEngine& GameEngine::operator=(const GameEngine& o) {
-    if(this != &o) {
+GameEngine& GameEngine::operator=(const GameEngine& other) {
+    if(this != &other) {
         for(int i=0; i<6; ++i) delete spots[i];
-        stats = o.stats; isRunning = o.isRunning; difficulty = o.difficulty;
-        for(int i=0; i<6; ++i) spots[i] = new ShelterSpot(*o.spots[i]);
+        stats = other.stats; difficulty = other.difficulty;
+        for(int i=0; i<6; ++i) spots[i] = new ShelterSpot(*other.spots[i]);
     }
     return *this;
 }
@@ -399,8 +358,100 @@ istream& operator>>(istream& is, GameEngine& ge) {
     return is >> ge.difficulty;
 }
 
-int main() {
+/*---------------------------------------------------------------------------------------*/
+
+class Menu {
+private:
     GameEngine game;
-    game.play();
+    bool isRunning;
+    char* latestMessage;
+
+public:
+    Menu();
+
+    void play() {
+        cout << "=============================================================" << endl;
+        cout << "                     CAT SHELTER MANAGER                     " << endl;
+        cout << "=============================================================" << endl;
+        int valueOption;
+        while (isRunning) {
+            cout<<"\n";
+            cout<<"                              /\__/\                             "<<endl;
+            cout<<"<--------------------------- (     ) --------------------------->"<<endl;
+            cout<<"                               >+<                               "<<endl;
+
+            cout<<latestMessage<<endl;
+            cout << "\n" << game.getScore() << "\n";
+            for (int i=0; i<6; ++i)
+                cout<< game.getSpot(i) << endl;
+            if (game.isShelterFull() && !game.canMergeAny()) {
+                cout<<"\n!!! GAME OVER !!! No more moves possible.\n \n Your score: "<<game.getScore()<<endl;
+                isRunning = false;
+                break;
+            }
+            cout << "1:Rescue | 2:Merge | 3:Clean (5pts) | 4:Exit\nChoice: ";
+            int choice; cin >> choice;
+
+            switch (choice) {
+                case 1:
+                { valueOption = game.spawnCat();
+                    if (valueOption == 0){
+                        latestMessage = "\n Success: Cat has been rescued!";
+                    }
+                    else
+                        if (valueOption == 1) {
+                            latestMessage = "\n Oh-no: The spot is too dirty!";
+                        }
+                        else
+                            latestMessage = "\n No more room in the shelter!";
+                }
+                break;
+
+                case 2:
+                { int a, b;
+                    cout << "Enter IDs to merge: ";
+                    cin >> a >> b;
+                    valueOption = game.attemptMerge(a, b);
+                    if (valueOption) {
+                        latestMessage = "\n The cats have been merged!";
+                    }
+                    else
+                        latestMessage = "\n Merge Invalid!";
+                }
+                break;
+
+                case 3:
+                { int id;
+                    cout << "Enter the ID to clean: ";
+                    cin >> id;
+                    valueOption = game.cleanSlot(id);
+                    if (valueOption) {
+                        latestMessage = "\n The spot has been cleaned!";
+                    }
+                    else
+                        latestMessage = "\n Oh-no: Not enough points!";
+                    if (valueOption == 0 and !game.canMergeAny()) {
+                        sprintf(latestMessage, "\n!!! GAME OVER !!! No more moves possible.\n \n Your score: %lf", game.getScore());
+                        isRunning = false;
+                        break;
+                    }
+                }
+                break;
+
+                case 4: isRunning = false; sprintf(latestMessage, "\n Your score: %lf", game.getScore());
+                    break;
+                default:  cout<<"\n It is an invalid input, please use a key supported.";
+            }
+        }
+    }
+};
+
+Menu::Menu(): isRunning(true), latestMessage(""){ }
+
+
+int main() {
+    Menu playMenu;
+    playMenu.play();
+
     return 0;
 }
