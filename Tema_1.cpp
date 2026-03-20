@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cstdlib>
 #include <cstring>
 #include <cstdio>
 using namespace std;
@@ -132,6 +131,7 @@ public:
     //Getters
     CatCard* getCard() const;
     float getCleanliness() const;
+    int getOccupationCount() const { return logHistory[0]; }
 
     //Functions
     bool isEmpty() const;
@@ -146,11 +146,11 @@ public:
 };
 
 ShelterSpot::ShelterSpot(int id) : card(nullptr), cleanliness(100), spotID(id){
-    logHistory = new int[3]{0, 0, 0};
+    logHistory = new int [3]{0, 0, 0};
 }
 ShelterSpot::ShelterSpot(const ShelterSpot &other) : spotID(other.spotID) {
     card = other.card ? new CatCard(*other.card) : nullptr;
-    logHistory = new int[3];
+    logHistory = new int [3];
     for (int i = 0; i < 3; i++)
         logHistory[i] = other.logHistory[i];
     cleanliness = other.cleanliness;
@@ -166,7 +166,6 @@ CatCard* ShelterSpot::getCard() const {
 float ShelterSpot::getCleanliness() const {
     return cleanliness;
 }
-
 bool ShelterSpot::isEmpty() const {
     return card == nullptr;
 }
@@ -195,7 +194,8 @@ ShelterSpot& ShelterSpot:: operator=(const ShelterSpot& other) {
             delete card;
             card = other.card ? new CatCard(*other.card) : nullptr;
             cleanliness = other.cleanliness;
-            for(int i=0; i<3; ++i) logHistory[i] = other.logHistory[i];
+            for(int i=0; i<3; ++i)
+                logHistory[i] = other.logHistory[i];
         }
         return *this;
     }
@@ -212,33 +212,55 @@ class Score {
 private:
     double balance;
     double multiplier;
+    int totalCatsRescued;
+    double totalSpent;
 
 public:
     //Constructor
-    Score(double b, double m);
+    Score(double b, double a);
+    Score();
+    Score(const Score& other);
     //need copy constructor and destructor
 
     //Getter
     double getBalance() const;
 
     //Function
-    void addFunds(double amount);
+    void addPoints(double amount);
+    void recordRescue() { totalCatsRescued++; }
+    void recordExpense(double amount) { totalSpent += amount;}
 
     //Operator overload
     friend ostream& operator<<(ostream& os, const Score& e);
+    // friend istream& operator>>(istream& is, Score& e);
 };
 
-Score::Score(double b, double m) : balance(b), multiplier(m) {}
+Score::Score(double b, double a) : balance(b), multiplier(a), totalCatsRescued(0), totalSpent(0.0) {}
+Score::Score() {
+    balance = 0;
+    multiplier = 1;
+    totalCatsRescued = 0;
+    totalSpent = 0;
+}
+Score::Score(const Score &other) {
+    this->balance = other.balance;
+    this->multiplier = other.multiplier;
+    this->totalCatsRescued = other.totalCatsRescued;
+    this->totalSpent = other.totalSpent;
+}
 
 double Score::getBalance() const {
     return balance;
 }
-void Score::addFunds(double amount) {
+
+void Score::addPoints(double amount) {
     balance += (amount * multiplier);
 }
 
 ostream& operator<<(ostream& os, const Score& e) {
-    os << " * Purr-Points: " << e.balance<<" * "<<endl;
+    os << " * Purr-Points: " << e.balance<<" * "
+    << " | Total Rescued: " << e.totalCatsRescued
+    << " | Total Spent: " << e.totalSpent<<" pts"<<endl;
     return os;
 }
 
@@ -249,6 +271,7 @@ private:
     ShelterSpot* spots[6];
     Score stats;
     int difficulty;
+    int maxCatsInOneSpot;
 
 public:
     //Constructors
@@ -268,7 +291,12 @@ public:
     int spawnCat();
     int attemptMerge(int a, int b);
     int cleanSlot(int id);
-
+    int getDifficultyByCatSpot() const {
+        if (maxCatsInOneSpot < 3) return 1;
+        if (maxCatsInOneSpot < 6) return 2;
+        if (maxCatsInOneSpot < 10) return 3;
+        return 5;
+    }
 
     //Operator overload
     GameEngine& operator=(const GameEngine& o);
@@ -276,13 +304,13 @@ public:
     friend istream& operator>>(istream& is, GameEngine& ge);
 };
 
-GameEngine::GameEngine() : stats(10.0, 1.0), difficulty(0) {
+GameEngine::GameEngine() : stats(10.0, 1.0), difficulty(0), maxCatsInOneSpot(0) {
     for (int i = 0; i < 6; ++i) spots[i] = new ShelterSpot(i);
 }
-GameEngine::GameEngine(int diff) : stats(0.0, 1.5), difficulty(diff) {
+GameEngine::GameEngine(int diff) : stats(0.0, 1.5), difficulty(diff), maxCatsInOneSpot(0) {
     for(int i=0; i<6; ++i) spots[i] = new ShelterSpot(i);
 }
-GameEngine::GameEngine(const GameEngine& o) : stats(o.stats), difficulty(o.difficulty) {
+GameEngine::GameEngine(const GameEngine& o) : stats(o.stats), difficulty(o.difficulty), maxCatsInOneSpot(o.maxCatsInOneSpot) {
     for(int i=0; i<6; ++i) spots[i] = new ShelterSpot(*o.spots[i]);
 }
 GameEngine::~GameEngine() {
@@ -312,8 +340,14 @@ int GameEngine::spawnCat() {
         if (spots[i]->isEmpty()) {
             if (spots[i]->getCleanliness() > 20.0f) {
                 spots[i]->occupy(CatCard(1, false, 'F'));
-                for(int j=0; j<6; j++)
+                int currentSpotTotal = spots[i]->getOccupationCount();
+                    if (currentSpotTotal > maxCatsInOneSpot) {
+                        maxCatsInOneSpot = currentSpotTotal;
+                    }
+                stats.recordRescue();
+                for(int j=0; j<6; j++){
                     spots[j]->deteriorate();
+                }
                 return 0;
             }
             return 1;
@@ -327,7 +361,7 @@ int GameEngine::attemptMerge(int a, int b) {
             int nextTier = spots[a]->getCard()->getTier() + 1;
             spots[a]->occupy(CatCard(nextTier, false, 'M'));
             spots[b]->evict();
-            stats.addFunds(10.0);
+            stats.addPoints(10.0);
             for(int j=0; j<6; j++) spots[j]->deteriorate();
             return 1;
         }
@@ -336,7 +370,8 @@ int GameEngine::attemptMerge(int a, int b) {
 }
 int GameEngine::cleanSlot(int id) {
     if (stats.getBalance() >= 5.0) {
-        stats.addFunds(-5.0);
+        stats.addPoints(-5.0);
+        stats.recordExpense(5.0);
         spots[id]->clean();
         return 1;
     }
@@ -364,46 +399,53 @@ class Menu {
 private:
     GameEngine game;
     bool isRunning;
-    char* latestMessage;
 
 public:
     Menu();
 
     void play() {
+        system("CLS");
         cout << "=============================================================" << endl;
         cout << "                     CAT SHELTER MANAGER                     " << endl;
         cout << "=============================================================" << endl;
         int valueOption;
         while (isRunning) {
             cout<<"\n";
-            cout<<"                              /\__/\                             "<<endl;
+            cout<<"                              / __/                             "<<endl;
             cout<<"<--------------------------- (     ) --------------------------->"<<endl;
             cout<<"                               >+<                               "<<endl;
 
-            cout<<latestMessage<<endl;
             cout << "\n" << game.getScore() << "\n";
             for (int i=0; i<6; ++i)
                 cout<< game.getSpot(i) << endl;
+
             if (game.isShelterFull() && !game.canMergeAny()) {
-                cout<<"\n!!! GAME OVER !!! No more moves possible.\n \n Your score: "<<game.getScore()<<endl;
+                cout<<"\033[2J\033[H"<<"\n!!! GAME OVER !!! No more moves possible.\n \n Your stats:\n "<<game.getScore()<<endl;
                 isRunning = false;
                 break;
             }
-            cout << "1:Rescue | 2:Merge | 3:Clean (5pts) | 4:Exit\nChoice: ";
+
+            for (int i=0; i<6; ++i)
+                if (!game.getSpot(i).isEmpty() and game.getSpot(i).getCard()->getTier() == 7) {
+                    cout<<"\033[2J\033[H"<<"\n CONGRATULATIONS!"<<endl;
+                    isRunning = false;
+                    break;
+                }
+            cout << "1:Rescue | 2:Merge | 3:Clean | 4:Exit\nChoice: ";
             int choice; cin >> choice;
 
             switch (choice) {
                 case 1:
-                { valueOption = game.spawnCat();
+                {valueOption = game.spawnCat();
                     if (valueOption == 0){
-                        latestMessage = "\n Success: Cat has been rescued!";
+                        cout<<"\033[2J\033[H"<<"\n Success: Cat has been rescued!\n";
                     }
                     else
                         if (valueOption == 1) {
-                            latestMessage = "\n Oh-no: The spot is too dirty!";
+                            cout<<"\033[2J\033[H"<<"\n Oh-no: The spot is too dirty!\n";
                         }
                         else
-                            latestMessage = "\n No more room in the shelter!";
+                            cout<<"\033[2J\033[H"<<"\n No more room in the shelter!\n";
                 }
                 break;
 
@@ -413,41 +455,40 @@ public:
                     cin >> a >> b;
                     valueOption = game.attemptMerge(a, b);
                     if (valueOption) {
-                        latestMessage = "\n The cats have been merged!";
+                        cout<<"\033[2J\033[H"<<"\n The cats have been merged!\n";
                     }
                     else
-                        latestMessage = "\n Merge Invalid!";
+                        cout<<"\033[2J\033[H"<<"\n Merge Invalid!\n";
                 }
                 break;
 
                 case 3:
                 { int id;
-                    cout << "Enter the ID to clean: ";
+                    cout << "Enter the spot to clean: ";
                     cin >> id;
                     valueOption = game.cleanSlot(id);
                     if (valueOption) {
-                        latestMessage = "\n The spot has been cleaned!";
+                        cout<<"\033[2J\033[H"<<"\n The spot has been cleaned!\n";
                     }
                     else
-                        latestMessage = "\n Oh-no: Not enough points!";
+                        cout<<"\033[2J\033[H"<<"\n Oh-no: Not enough points!";
                     if (valueOption == 0 and !game.canMergeAny()) {
-                        sprintf(latestMessage, "\n!!! GAME OVER !!! No more moves possible.\n \n Your score: %lf", game.getScore());
+                        cout<<"\033[2J\033[H"<<"\n!!! GAME OVER !!! No more moves possible.\n \n Your stats:\n "<<game.getScore();
                         isRunning = false;
                         break;
                     }
                 }
                 break;
 
-                case 4: isRunning = false; sprintf(latestMessage, "\n Your score: %lf", game.getScore());
+                case 4: isRunning = false; cout<<"\033[2J\033[H"<<"\n Your stats:\n"<<game.getScore();
                     break;
-                default:  cout<<"\n It is an invalid input, please use a key supported.";
+                default:  cout<<"\033[2J\033[H"<<"\n It is an invalid input, please use a key supported.\n";
             }
         }
     }
 };
 
-Menu::Menu(): isRunning(true), latestMessage(""){ }
-
+Menu::Menu() : isRunning(true){ }
 
 int main() {
     Menu playMenu;
