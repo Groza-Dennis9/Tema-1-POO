@@ -36,14 +36,14 @@ public:
 int CatCard::totalCatsCreated = 0;
 
 //Constructors
-CatCard::CatCard(int t, bool rare, char g, const char *name) : tier(t), isRare(rare), gender(g), catID(1) {
+CatCard::CatCard(int t, bool rare, char g, const char *name) : tier(t), isRare(rare), gender(g), catID(1), breedName(nullptr) {
     if (name)
         deepCopy(name);
     else
         deepCopy(getBreedByTier(t));
     totalCatsCreated++;
 }
-CatCard::CatCard(const CatCard &other) : tier(other.tier), isRare(other.isRare), gender(other.gender), catID(other.catID) {
+CatCard::CatCard(const CatCard &other) : tier(other.tier), isRare(other.isRare), gender(other.gender), catID(other.catID), breedName(nullptr) {
     deepCopy(other.breedName);
 }
 CatCard::CatCard() : catID(1) {
