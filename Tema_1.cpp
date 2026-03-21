@@ -28,13 +28,14 @@ public:
     int getTier() const;
     const char* getBreed() const;
 
-    //Operators overload
+    //Operator overloads
     CatCard& operator=(const CatCard& other);
     friend ostream& operator<<(ostream& os, const CatCard& c);
     friend istream& operator>>(istream& is, CatCard& c);
 };
 int CatCard::totalCatsCreated = 0;
 
+//Constructors
 CatCard::CatCard(int t, bool rare, char g, const char *name) : tier(t), isRare(rare), gender(g), catID(1) {
     if (name)
         deepCopy(name);
@@ -51,11 +52,14 @@ CatCard::CatCard() : catID(1) {
     gender = '\0';
     breedName = nullptr;
 }
+//Destructors
 CatCard::~CatCard() {
     delete[] breedName;
 }
 
+//Functions (private)
 void CatCard::deepCopy(const char* name) {
+    delete[] breedName;
     if (name) {
         breedName = new char[strlen(name) + 1];
         strcpy(breedName, name);
@@ -75,6 +79,7 @@ const char* CatCard::getBreedByTier (int t) const {
     }
 }
 
+//Setters and Getters
 void CatCard::setTier(int t) {
     tier = t;
     delete[] breedName;
@@ -87,6 +92,7 @@ const char* CatCard::getBreed() const {
     return breedName;
 }
 
+//Operator overloads
 CatCard& CatCard::operator= (const CatCard& other) {
     if (this != &other) {
         delete[] breedName;
@@ -122,7 +128,7 @@ private:
     static int number;
 
 public:
-    //Constructor
+    //Constructors
     ShelterSpot(int id);
     ShelterSpot(const ShelterSpot& other);
     ShelterSpot();
@@ -132,7 +138,7 @@ public:
     //Getters
     CatCard* getCard() const;
     float getCleanliness() const;
-    int getOccupationCount() const { return logHistory[0]; }
+    int getOccupationCount() const;
 
     //Functions
     bool isEmpty() const;
@@ -141,13 +147,14 @@ public:
     void deteriorate();
     void clean();
 
-    //Operators overload
+    //Operator overloads
     ShelterSpot& operator=(const ShelterSpot& other);
     friend ostream& operator<<(ostream& os, const ShelterSpot& s);
     friend istream& operator>>(istream& is, ShelterSpot& s);
 };
 int ShelterSpot::number = 0;
 
+//Constructors
 ShelterSpot::ShelterSpot(int id) : card(nullptr), cleanliness(100), spotID(id){
     logHistory = new int [3]{0, 0, 0};
 }
@@ -161,18 +168,24 @@ ShelterSpot::ShelterSpot(const ShelterSpot &other) : spotID(other.spotID) {
 ShelterSpot::ShelterSpot() : cleanliness(100.0), spotID(0) {
     logHistory = new int [3] {0, 0, 0};
 }
-
+//Destructor
 ShelterSpot::~ShelterSpot() {
     delete card;
     delete[] logHistory;
 }
 
+//Getters
 CatCard* ShelterSpot::getCard() const {
     return card;
 }
 float ShelterSpot::getCleanliness() const {
     return cleanliness;
 }
+int ShelterSpot::getOccupationCount() const {
+    return logHistory[0];
+}
+
+//Functions
 bool ShelterSpot::isEmpty() const {
     return card == nullptr;
 }
@@ -196,6 +209,7 @@ void ShelterSpot::clean() {
     logHistory[2]++;
 }
 
+//Operator overloads
 ShelterSpot& ShelterSpot:: operator=(const ShelterSpot& other) {
         if(this != &other) {
             delete card;
@@ -228,7 +242,7 @@ private:
     const int scoreID;
 
 public:
-    //Constructor
+    //Constructors
     Score(double b, double a);
     Score();
     Score(const Score& other);
@@ -236,12 +250,12 @@ public:
     //Getter
     double getBalance() const;
 
-    //Function
+    //Functions
     void addPoints(double amount);
-    void recordRescue() { totalCatsRescued++; }
-    void recordExpense(double amount) { totalSpent += amount;}
+    void recordRescue();
+    void recordExpense(double amount);
 
-    //Operators overload
+    //Operator overloads
     Score& operator=(const Score& other);
     friend ostream& operator<<(ostream& os, const Score& e);
     friend istream& operator>>(istream& is, Score& e);
@@ -249,6 +263,7 @@ public:
 int Score::totalCatsRescued = 0;
 double Score::totalSpent = 0.0;
 
+//Constructors
 Score::Score(double b, double a) : balance(b), multiplier(a), scoreID(1) {}
 Score::Score() : scoreID(1) {
     balance = 0;
@@ -259,17 +274,25 @@ Score::Score(const Score &other) : scoreID(1){
     this->multiplier = other.multiplier;
 }
 
+//Getter
 double Score::getBalance() const {
     return balance;
 }
 
+//Functions
 void Score::addPoints(double amount) {
     balance += (amount * multiplier);
 }
+void Score::recordRescue() { totalCatsRescued++; }
+void Score::recordExpense(double amount) { totalSpent += amount;}
 
+//Operator overloads
 Score& Score :: operator=(const Score& other) {
-    this->balance = other.balance;
-    this->multiplier = other.multiplier;
+    if (this != &other) {
+        this->balance = other.balance;
+        this->multiplier = other.multiplier;
+    }
+    return *this;
 }
 ostream& operator<<(ostream& os, const Score& e) {
     os << " * Purr-Points: " << e.balance<<" * "
@@ -302,8 +325,8 @@ public:
     ~GameEngine();
 
     //Getters
-    const ShelterSpot& getSpot(int index) const { return *spots[index]; }
-    const Score& getScore() const { return stats; }
+    const ShelterSpot& getSpot(int index) const;
+    const Score& getScore() const;
 
     //Functions
     bool canMergeAny() const;
@@ -318,13 +341,14 @@ public:
         return 5;
     }
 
-    //Operator overload
+    //Operator overloads
     GameEngine& operator=(const GameEngine& o);
     friend ostream& operator<<(ostream& os, const GameEngine& ge);
     friend istream& operator>>(istream& is, GameEngine& ge);
 };
 int GameEngine::maxCatsInOneSpot = 0;
 
+//Constuctors
 GameEngine::GameEngine() : stats(10.0, 1.0), difficulty(0), gameID(1) {
     for (int i = 0; i < 6; ++i) spots[i] = new ShelterSpot(i);
 }
@@ -334,10 +358,16 @@ GameEngine::GameEngine(int diff) : stats(0.0, 1.5), difficulty(diff), gameID(1) 
 GameEngine::GameEngine(const GameEngine& o) : stats(o.stats), difficulty(o.difficulty), gameID(1) {
     for(int i=0; i<6; ++i) spots[i] = new ShelterSpot(*o.spots[i]);
 }
+//Destructor
 GameEngine::~GameEngine() {
     for (int i = 0; i < 6; ++i) delete spots[i];
 }
 
+//Getters
+const ShelterSpot& GameEngine::getSpot(int index) const { return *spots[index]; }
+const Score& GameEngine::getScore() const { return stats; }
+
+//Functions
 bool GameEngine::canMergeAny() const {
     for (int i = 0; i < 6; ++i) {
         for (int j = i + 1; j < 6; ++j) {
@@ -355,7 +385,6 @@ bool GameEngine::isShelterFull() const {
             return false;
     return true;
 }
-
 int GameEngine::spawnCat() {
     for (int i = 0; i < 6; ++i) {
         if (spots[i]->isEmpty()) {
@@ -399,6 +428,7 @@ int GameEngine::cleanSlot(int id) {
         return 0;
 }
 
+//Operator overloads
 GameEngine& GameEngine::operator=(const GameEngine& other) {
     if(this != &other) {
         for(int i=0; i<6; ++i) delete spots[i];
