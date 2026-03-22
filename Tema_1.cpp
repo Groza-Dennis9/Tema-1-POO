@@ -3,6 +3,7 @@
 #include <cstdio>
 using namespace std;
 
+
 class CatCard {
 private:
     int tier;
@@ -531,7 +532,7 @@ public:
 
                 case 4: isRunning = false; cout<<"\033[2J\033[H"<<"\n Your stats:\n"<<game.getScore();
                     break;
-                default:  cout<<"\033[2J\033[H"<<"\n It is an invalid input, please use a keys supported.\n";
+                default:  cout<<"\033[2J\033[H"<<"\n It is an invalid input, please use a key supported.\n";
             }
         }
 
