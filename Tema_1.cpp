@@ -75,7 +75,7 @@ const char* CatCard::getBreedByTier (int t) const {
         case 4: return "Persian";
         case 5: return "MaineCoon";
         case 6: return "Sphinx";
-        default: return "LegendaryCat";
+        default: return "Unknown";
     }
 }
 
@@ -476,12 +476,6 @@ public:
                 break;
             }
 
-            for (int i=0; i<6; ++i)
-                if (!game.getSpot(i).isEmpty() and game.getSpot(i).getCard()->getTier() == 7) {
-                    cout<<"\033[2J\033[H"<<"\n CONGRATULATIONS! You got the LegendaryCat!"<<endl;
-                    isRunning = false;
-                    break;
-                }
             cout << "1:Rescue | 2:Merge | 3:Clean | 4:Exit\nChoice: ";
             int choice; cin >> choice;
 
@@ -507,6 +501,10 @@ public:
                     valueOption = game.attemptMerge(a, b);
                     if (valueOption) {
                         cout<<"\033[2J\033[H"<<"\n The cats have been merged!\n";
+                        for (int i=0; i<6; ++i)
+                            if (!game.getSpot(i).isEmpty() and game.getSpot(i).getCard()->getTier() == 6) {
+                                cout<<"\n *** CONGRATULATIONS! You got the Sphinx!***"<<endl;
+                            }
                     }
                     else
                         cout<<"\033[2J\033[H"<<"\n Merge Invalid!\n";
@@ -533,9 +531,10 @@ public:
 
                 case 4: isRunning = false; cout<<"\033[2J\033[H"<<"\n Your stats:\n"<<game.getScore();
                     break;
-                default:  cout<<"\033[2J\033[H"<<"\n It is an invalid input, please use a key supported.\n";
+                default:  cout<<"\033[2J\033[H"<<"\n It is an invalid input, please use a keys supported.\n";
             }
         }
+
     }
 };
 
