@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdio>
+#include <bits/stdc++.h>
 using namespace std;
 
 
@@ -451,6 +452,7 @@ class Menu {
 private:
     GameEngine game;
     bool isRunning;
+    static int max_tier_spot;
 
 public:
     Menu();
@@ -478,7 +480,13 @@ public:
             }
 
             cout << "1:Rescue | 2:Merge | 3:Clean | 4:Exit\nChoice: ";
-            int choice; cin >> choice;
+
+            int choice; cin>>choice;
+            if (cin.fail()) {
+                cin.clear();
+                choice = 0;
+            }
+            cin.ignore(1000, '\n');
 
             switch (choice) {
                 case 1:
@@ -499,34 +507,49 @@ public:
                 { int a, b;
                     cout << "Enter IDs to merge: ";
                     cin >> a >> b;
-                    valueOption = game.attemptMerge(a, b);
-                    if (valueOption) {
-                        cout<<"\033[2J\033[H"<<"\n The cats have been merged!\n";
-                        for (int i=0; i<6; ++i)
-                            if (!game.getSpot(i).isEmpty() and game.getSpot(i).getCard()->getTier() == 6) {
-                                cout<<"\n *** CONGRATULATIONS! You got the Sphinx!***"<<endl;
-                            }
+                    if (!cin.fail()) {
+                        valueOption = game.attemptMerge(a, b);
+                        if (valueOption) {
+                            cout<<"\033[2J\033[H"<<"\n The cats have been merged!\n";
+                            for (int i=0; i<6; ++i)
+                                if (!game.getSpot(i).isEmpty() and game.getSpot(i).getCard()->getTier() == 6 and i != max_tier_spot) {
+                                    cout<<"\n *** CONGRATULATIONS! You got the Sphinx!***"<<endl;
+                                    max_tier_spot = i;
+                                }
+                        }
+                        else
+                            cout<<"\033[2J\033[H"<<"\n Merge Invalid!\n";
                     }
-                    else
+                    else {
+                        cin.clear();
                         cout<<"\033[2J\033[H"<<"\n Merge Invalid!\n";
+                    }
+                    cin.ignore(1000, '\n');
                 }
                 break;
 
                 case 3:
-                { int id;
+                {int id;
                     cout << "Enter the spot to clean: ";
                     cin >> id;
-                    valueOption = game.cleanSlot(id);
-                    if (valueOption) {
-                        cout<<"\033[2J\033[H"<<"\n The spot has been cleaned!\n";
+                    if (!cin.fail()) {
+                        valueOption = game.cleanSlot(id);
+                        if (valueOption) {
+                            cout<<"\033[2J\033[H"<<"\n The spot has been cleaned!\n";
+                        }
+                        else
+                            cout<<"\033[2J\033[H"<<"\n Oh-no: Not enough points!";
+                        if (valueOption == 0 and !game.canMergeAny()) {
+                            cout<<"\033[2J\033[H"<<"\n!!! GAME OVER !!! No more moves possible.\n \n Your stats:\n "<<game.getScore();
+                            isRunning = false;
+                            break;
+                        }
                     }
-                    else
-                        cout<<"\033[2J\033[H"<<"\n Oh-no: Not enough points!";
-                    if (valueOption == 0 and !game.canMergeAny()) {
-                        cout<<"\033[2J\033[H"<<"\n!!! GAME OVER !!! No more moves possible.\n \n Your stats:\n "<<game.getScore();
-                        isRunning = false;
-                        break;
+                    else {
+                        cin.clear();
+                        cout<<"\033[2J\033[H"<<"\n Cleaning Invalid!\n";
                     }
+                    cin.ignore(1000, '\n');
                 }
                 break;
 
@@ -538,6 +561,7 @@ public:
 
     }
 };
+int Menu::max_tier_spot = -1;
 
 Menu::Menu() : isRunning(true){ }
 
