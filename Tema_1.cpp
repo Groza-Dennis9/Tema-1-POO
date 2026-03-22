@@ -1,9 +1,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdio>
-#include <bits/stdc++.h>
 using namespace std;
-
 
 class CatCard {
 private:
@@ -38,7 +36,7 @@ public:
 int CatCard::totalCatsCreated = 0;
 
 //Constructors
-CatCard::CatCard(int t, bool rare, char g, const char *name) : tier(t), isRare(rare), gender(g), catID(1), breedName(nullptr) {
+CatCard::CatCard(int t, bool rare, char g, const char *name) : tier(t), isRare(rare), gender(g), breedName(nullptr), catID(++totalCatsCreated) {
     if (name)
         deepCopy(name);
     else
@@ -48,7 +46,7 @@ CatCard::CatCard(int t, bool rare, char g, const char *name) : tier(t), isRare(r
 CatCard::CatCard(const CatCard &other) : tier(other.tier), isRare(other.isRare), gender(other.gender), catID(other.catID), breedName(nullptr) {
     deepCopy(other.breedName);
 }
-CatCard::CatCard() : catID(1) {
+CatCard::CatCard() : catID(++totalCatsCreated) {
     tier = 0;
     isRare = false;
     gender = '\0';
@@ -61,7 +59,6 @@ CatCard::~CatCard() {
 
 //Functions (private)
 void CatCard::deepCopy(const char* name) {
-    delete[] breedName;
     if (name) {
         breedName = new char[strlen(name) + 1];
         strcpy(breedName, name);
@@ -266,12 +263,12 @@ int Score::totalCatsRescued = 0;
 double Score::totalSpent = 0.0;
 
 //Constructors
-Score::Score(double b, double a) : balance(b), multiplier(a), scoreID(1) {}
+Score::Score(double b, double a) : balance(b), multiplier(a), scoreID(totalCatsRescued) {}
 Score::Score() : scoreID(1) {
     balance = 0;
     multiplier = 1;
 }
-Score::Score(const Score &other) : scoreID(1){
+Score::Score(const Score &other) : scoreID(totalCatsRescued){
     this->balance = other.balance;
     this->multiplier = other.multiplier;
 }
@@ -298,8 +295,8 @@ Score& Score :: operator=(const Score& other) {
 }
 ostream& operator<<(ostream& os, const Score& e) {
     os << " * Purr-Points: " << e.balance<<" * "
-    << " | Total Rescued: " << e.totalCatsRescued
-    << " | Total Spent: " << e.totalSpent<<" pts"<<endl;
+    << " | Total Rescued: " << Score::totalCatsRescued
+    << " | Total Spent: " << Score::totalSpent<<" pts"<<endl;
     return os;
 }
 istream& operator>>(istream& is, Score& e) {
@@ -344,7 +341,7 @@ public:
     }
 
     //Operator overloads
-    GameEngine& operator=(const GameEngine& o);
+    GameEngine& operator=(const GameEngine& other);
     friend ostream& operator<<(ostream& os, const GameEngine& ge);
     friend istream& operator>>(istream& is, GameEngine& ge);
 };
@@ -420,7 +417,7 @@ int GameEngine::attemptMerge(int a, int b) {
     }
     return 0;
 }
-int GameEngine::cleanSlot(int id) {
+int GameEngine::cleanSlot(int const id) {
     if (stats.getBalance() >= 5.0) {
         stats.addPoints(-5.0);
         stats.recordExpense(5.0);
